@@ -1,0 +1,89 @@
+import numpy as np
+import pandas as pd
+
+''''
+def data(filename):
+	df = pd.read_csv(filename)
+	traindata = df.iloc[0:30000, 1:].values
+	trainlabel = df.iloc[0:30000, 0].values
+	testdata = df.iloc[0:1000, 1:].values
+	testlabel= df.iloc[0:1000, 0].values
+	return traindata, trainlabel, testdata, testlabel
+
+
+'''
+
+df = pd.read_csv(r"C:\Users\hp\Desktop\code\train.csv")
+traindata = df.iloc[0:30000, 1:].values
+
+m,n=traindata.shape
+# for i in range(m):
+# 	for j in range(n):
+# 		if traindata[i][j]>=128:
+# 			traindata[i][j]=1
+# 		if traindata[i][j]<128:
+# 			traindata[i][j]=0
+
+trainlabel = df.iloc[0:30000, 0].values.T
+testdata = df.iloc[30000:42000, 1:].values
+m_,n_=testdata.shape
+# for i in range(m_):
+# 	for j in range(n_):
+# 		if testdata[i][j]>=128:
+# 			testdata[i][j]=1
+# 		if testdata[i][j]<128:
+# 			testdata[i][j]=0
+testlabel= df.iloc[30000:42000, 0].values.T
+#x=df.iloc[0:1, 1:].values.T
+
+def getAllProbability(data,label):
+	classnum=10
+	feasture=data.shape[1]
+	p_y=[0]*classnum
+	p_y_num = [0] * classnum
+	for i in range(classnum):
+		p_y[i]=(np.sum(np.mat(label)==i)+1)/(len(data)+10)
+		p_y_num[i]=np.sum(np.mat(label)==i)
+	p_y=np.log(p_y)
+	p_x_y=np.zeros((classnum,feasture,256))
+
+	for i in range(len(label)):
+		label_i=label[i]
+		data_i=data[i]
+		for j in range(feasture):
+			p_x_y[label_i][j][data_i[j]]+=1
+
+	for i in range(classnum):
+		for j in range(feasture):
+			for z in range(256):
+				p_x_y[i][j][z]=np.log((p_x_y[i][j][z]+1)/(p_y_num[i]+256))
+
+	return p_y,p_x_y,p_y_num
+
+def NaiveBayes(p_y, p_x_y, x):
+	feasturenum=784
+	classnum=10
+	p=[0]*classnum
+
+	x=x.astype('int64')
+	for i in range(classnum):
+		num = 0
+		for j in range(feasturenum):
+			num+=p_x_y[i][j][x[j]]
+		p[i]=num+p_y[i]
+	return p.index(max(p))
+
+def model_test(p_y,p_x_y,testdata,testlabel):
+	errorcount=0
+	testlabel= testlabel.astype('int64')
+	result=[0]*len(testlabel)
+	for i in range(len(testlabel)):
+		presict = NaiveBayes(p_y, p_x_y, testdata[i])
+		result[i]=presict
+		if presict!=testlabel[i]:
+			errorcount+=1
+	return 1-(errorcount/len(testlabel))
+
+
+p_y,p_x_y,p=getAllProbability(traindata,trainlabel)
+a=model_test(p_y,p_x_y,testdata,testlabel)
